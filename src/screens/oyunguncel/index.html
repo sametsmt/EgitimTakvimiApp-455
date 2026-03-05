@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Üreme Sağlığı • Maraton Modu</title>
+    <style>
+        :root {
+            --pink: #fdf2f8;
+            --accent: #db2777;
+            --accent-dark: #be185d;
+            --text: #374151;
+            --shadow: 0 14px 30px rgba(0, 0, 0, .15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 480px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            border: 1px solid white;
+        }
+
+        h1 {
+            color: var(--accent);
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+        }
+
+        .input-group {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px solid #eee;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            background: #fffdfd;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: #eee;
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: 0.5s;
+        }
+
+        .card-box {
+            background: white;
+            margin: 20px 0;
+            border-radius: 20px;
+            padding: 25px;
+            font-weight: 700;
+            font-size: 1.15rem;
+            border: 3px solid var(--accent);
+            box-shadow: var(--shadow);
+            color: #1f2937;
+            line-height: 1.4;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 15px;
+            background: var(--accent);
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .stats-sub {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 25px;
+            width: 85%;
+            max-width: 380px;
+            text-align: center;
+        }
+
+        .how-to-list {
+            text-align: left;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div id="startScreen">
+            <h1>Bilgi Maratonu 🌸</h1>
+            <p style="margin-bottom: 25px; color: var(--muted);">Lütfen bilgilerinizi girerek başlayın.</p>
+
+            <div class="input-group">
+                <label>Ad Soyad</label>
+                <input type="text" id="userName" placeholder="Ad Soyad giriniz">
+            </div>
+
+            <div class="input-group">
+                <label>E-posta</label>
+                <input type="email" id="userEmail" placeholder="E-posta giriniz">
+            </div>
+
+            <button class="btn" id="startBtn">Oyuna Başla</button>
+        </div>
+
+        <div id="gameScreen" class="hidden">
+            <div class="stats-header">
+                <div id="levelDisplay" style="color:var(--accent)">Seviye: 1</div>
+                <div id="lives" style="color:#dc2626;">❤️❤️❤️❤️❤️</div>
+            </div>
+            <div class="stats-sub">
+                <div id="qCounter">Soru: 1/35</div>
+                <div id="scoreDisplay">Puan: 0</div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <div id="questionArea"></div>
+        </div>
+    </div>
+
+    <div id="modalOverlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="modalTitle"></h2>
+            <div id="modalText"></div>
+            <button class="btn" id="modalBtn">Anladım, Başlayalım!</button>
+        </div>
+    </div>
+
+    <script>
+        const MASTER_DATABASE = [
+            { q: "Sağlıklı bir gebelik için ideal yaş aralığı nedir?", a: ["18-35 yaş", "12-18 yaş", "40-50 yaş"], c: 0, lv: 1 },
+            { q: "Düzenli jinekolojik muayene ne sıklıkla yapılmalıdır?", a: ["Yılda bir", "5 yılda bir", "Sadece şikayet olunca"], c: 0, lv: 1 },
+            { q: "Kişisel hijyen için iç çamaşırı ne sıklıkla değiştirilmelidir?", a: ["Haftada bir", "Her gün", "Üç günde bir"], c: 1, lv: 1 },
+            { q: "Ergenlik dönemi genel olarak hangi yaşlarda başlar?", a: ["5-8 yaş", "10-14 yaş", "20-25 yaş"], c: 1, lv: 1 },
+            { q: "Kendi kendine meme muayenesi ne sıklıkla yapılmalıdır?", a: ["Haftada bir", "Ayda bir", "Yılda bir"], c: 1, lv: 1 },
+            { q: "Genital bölge temizliğinde hangisi kullanılmamalıdır?", a: ["Sadece su", "Sabun/Parfümlü jeller", "Hafif temizleyiciler"], c: 1, lv: 1 },
+            { q: "Üreme sağlığı eğitiminin temel amacı nedir?", a: ["Sadece çocuk sahibi olmak", "Sağlıklı bireyler ve aileler oluşturmak", "Sadece hastalıkları öğrenmek"], c: 1, lv: 1 },
+            { q: "Erkeklerde ergenliğin en belirgin fiziksel özelliği nedir?", a: ["Boy kısalması", "Ses kalınlaşması", "Diş dökülmesi"], c: 1, lv: 1 },
+            { q: "Adet (mensturasyon) döngüsü ortalama kaç gün sürer?", a: ["10 gün", "28-30 gün", "50 gün"], c: 1, lv: 1 },
+            { q: "Ergenlikte görülen sivilceler ne ile ilgilidir?", a: ["Hormonal değişim", "Yemek yemek", "Uykusuzluk"], c: 0, lv: 1 },
+            { q: "Gebe bir kadının beslenmesinde hangisi en önemlidir?", a: ["Fast food tüketmek", "Dengeli ve protein ağırlıklı beslenmek", "Sadece meyve yemek"], c: 1, lv: 2 },
+            { q: "Gebelik boyunca en az kaç kez doktor kontrolüne gidilmelidir?", a: ["1 kez", "En az 4 kez", "Hiç gitmese de olur"], c: 1, lv: 2 },
+            { q: "Yenidoğan bir bebek için en ideal besin hangisidir?", a: ["İnek sütü", "Hazır mama", "Anne sütü"], c: 2, lv: 2 },
+            { q: "Gebelikte folik asit kullanımı ne zaman başlanmalıdır?", a: ["Gebelikten 3 ay önce", "Doğumdan sonra", "7. aydan sonra"], c: 0, lv: 2 },
+            { q: "Anne sütünün ilk 6 ay tek başına verilmesinin ana nedeni nedir?", a: ["Ucuz olması", "Tüm besin ihtiyacını karşılaması", "Bebeğin su içmemesi"], c: 1, lv: 2 },
+            { q: "Gebelikte sigara ve alkol kullanımı sonucu ne oluşabilir?", a: ["Bebeğin hızlı büyümesi", "Düşük doğum ağırlığı/Gelişim geriliği", "Annenin iştahının açılması"], c: 1, lv: 2 },
+            { q: "Doğum sonrası annenin ilk sütüne ne ad verilir?", a: ["Laktoz", "Kolostrum", "Kazein"], c: 1, lv: 2 },
+            { q: "Bebeklere ek gıdaya ne zaman geçilmelidir?", a: ["2. ayda", "6. aydan sonra", "1 yaşında"], c: 1, lv: 2 },
+            { q: "Normal bir gebelik süresi ortalama kaç haftadır?", a: ["30 hafta", "40 hafta", "50 hafta"], c: 1, lv: 2 },
+            { q: "Gebelikte diş sağlığı neden önemlidir?", a: ["Sadece estetik için", "Erken doğum riskini etkileyebileceği için", "Bebek dişli doğacağı için"], c: 1, lv: 2 },
+            { q: "Cinsel yolla bulaşan hastalıklardan koruyan en etkili yöntem hangisidir?", a: ["Doğum kontrol hapı", "Kondom (Prezervatif)", "Takvim yöntemi"], c: 1, lv: 3 },
+            { q: "Hangisi modern bir aile planlaması yöntemi değildir?", a: ["Geri çekme", "RİA (Spiral)", "Hormonal yöntemler"], c: 0, lv: 3 },
+            { q: "Rahim içi araç (Spiral) ne işe yarar?", a: ["Bebek besler", "Gebeliği önler", "Cinsiyeti belirler"], c: 1, lv: 3 },
+            { q: "AİDS hastalığına neden olan virüs hangisidir?", a: ["HPV", "HIV", "H1N1"], c: 1, lv: 3 },
+            { q: "Vazektomi (erkek kanallarının bağlanması) kalıcı mıdır?", a: ["Evet", "Hayır", "Sadece 1 yıl sürer"], c: 0, lv: 3 },
+            { q: "Acil kontrasepsiyon (ertesi gün hapı) ne zaman kullanılır?", a: ["Her gün", "Sadece korunmasız ilişki sonrası", "Adet sancısında"], c: 1, lv: 3 },
+            { q: "Rahim ağzı kanserinden koruyan aşı hangisidir?", a: ["Grip aşısı", "HPV aşısı", "Tetanoz aşısı"], c: 1, lv: 3 },
+            { q: "Menopoz dönemi neyi ifade eder?", a: ["Üreme yeteneğinin sona ermesi", "Ergenliğin başlangıcı", "Geçici hastalık"], c: 0, lv: 3 },
+            { q: "Erkek üreme hücresine ne ad verilir?", a: ["Yumurta", "Sperm", "Hormon"], c: 1, lv: 3 },
+            { q: "Kadın üreme hücresine ne ad verilir?", a: ["Sperm", "Yumurta", "Plazma"], c: 1, lv: 3 },
+            { q: "Kısırlık (İnfertilite) tanımı için ne kadar süre beklenir?", a: ["1 ay", "1 yıl", "5 yıl"], c: 1, lv: 3 },
+            { q: "Bebek dostu hastane neyi destekler?", a: ["Mama kullanımını", "Anne sütü ve emzirmeyi", "Ücretli doğumu"], c: 1, lv: 3 },
+            { q: "Cinsel yolla bulaşan bir enfeksiyon belirtisi hangisi olabilir?", a: ["Normal akıntı", "Kaşıntı, yanma ve koku", "Baş ağrısı"], c: 1, lv: 3 },
+            { q: "Düzenli kontrollerde uygulanan 'Smear testi' neyi kontrol eder?", a: ["Kan şekerini", "Rahim ağzı kanseri riskini", "Boy uzunluğunu"], c: 1, lv: 3 },
+            { q: "Hangi korunma yöntemi %100 koruma sağlar?", a: ["Hap", "Spiral", "Hiçbiri (Mutlak değil)"], c: 2, lv: 3 }
+        ];
+
+        let state = {
+            user: { name: '', email: '' },
+            score: 0,
+            lives: 5,
+            availableQuestions: [],
+            currentIndex: 0
+        };
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        document.getElementById('startBtn').onclick = () => {
+            const n = document.getElementById('userName').value.trim();
+            const e = document.getElementById('userEmail').value.trim();
+            if (!n || !e) { alert("Lütfen ad ve e-posta bilgilerini doldurun!"); return; }
+
+            state.user = { name: n, email: e };
+            state.availableQuestions = shuffle([...MASTER_DATABASE]);
+
+            // NASIL OYNANIR MODALI
+            showModal(
+                "Nasıl Oynanır? 📖",
+                `<div class="how-to-list">
+        • Toplam <b>35 soru</b> bulunmaktadır.<br>
+        • Her doğru cevap <b>10 puan</b> kazandırır.<br>
+        • Toplam <b>5 can</b> hakkınız vardır.<br>
+        • Canınız bittiğinde oyun sona erer.<br>
+        • Sorular her oyunda karışık gelir.
+      </div>`,
+                "Anladım, Başlayalım!",
+                () => {
+                    document.getElementById('startScreen').classList.add('hidden');
+                    document.getElementById('gameScreen').classList.remove('hidden');
+                    render();
+                }
+            );
+        };
+
+        function render() {
+            if (state.currentIndex >= state.availableQuestions.length) {
+                state.availableQuestions = shuffle([...MASTER_DATABASE]);
+                state.currentIndex = 0;
+                showModal("Tebrikler! 🏆", `Harikasın ${state.user.name}! Tüm soruları bitirdin. Yeni tur daha karışık başlıyor!`, "Devam Et", render);
+                return;
+            }
+
+            const q = state.availableQuestions[state.currentIndex];
+            const totalQ = state.availableQuestions.length;
+
+            document.getElementById('levelDisplay').innerText = `Seviye: ${q.lv}`;
+            document.getElementById('qCounter').innerText = `Soru: ${state.currentIndex + 1}/${totalQ}`;
+            document.getElementById('lives').innerText = "❤️".repeat(state.lives);
+            document.getElementById('scoreDisplay').innerText = `Puan: ${state.score}`;
+            document.getElementById('progressBar').style.width = `${((state.currentIndex + 1) / totalQ) * 100}%`;
+
+            document.getElementById('questionArea').innerHTML = `
+      <div class="card-box">${q.q}</div>
+      ${q.a.map((opt, i) => `<button class="btn btn-outline" onclick="check(${i})">${opt}</button>`).join('')}
+    `;
+        }
+
+        function check(idx) {
+            const q = state.availableQuestions[state.currentIndex];
+            if (idx === q.c) {
+                state.score += 10;
+                state.currentIndex++;
+                render();
+            } else {
+                state.lives--;
+                const correct = q.a[q.c];
+                if (state.lives <= 0) {
+                    showModal("OYUN BİTTİ 💀", `Maalesef ${state.user.name}, canların tükendi.<br>Doğru cevap: <b>${correct}</b><br>Toplam Skor: <b>${state.score}</b>`, "Yeniden Dene", () => location.reload());
+                } else {
+                    showModal("Hatalı Cevap! ❌", `Doğru cevap şuydu:<br><b>${correct}</b>`, "Sıradaki Soru", () => {
+                        state.currentIndex++;
+                        render();
+                    });
+                }
+            }
+        }
+
+        function showModal(t, txt, b, cb) {
+            document.getElementById('modalTitle').innerText = t;
+            document.getElementById('modalText').innerHTML = txt;
+            document.getElementById('modalBtn').innerText = b;
+            document.getElementById('modalOverlay').classList.remove('hidden');
+            document.getElementById('modalBtn').onclick = () => {
+                document.getElementById('modalOverlay').classList.add('hidden');
+                if (cb) cb();
+            };
+        }
+    </script>
+</body>
+
+</html>
