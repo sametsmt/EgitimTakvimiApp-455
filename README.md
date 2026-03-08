@@ -31,3 +31,19 @@ Bu projede aşağıdaki teknolojiler kullanılmıştır:
 - Firebase Firestore
 - React Navigation
 - JavaScript
+
+
+
+## 📸 Uygulama Görselleri
+
+### Ana Sayfa
+![Ana Sayfa](screenshots/home.png)
+
+### Eğitim Listesi
+![Eğitim Listesi](screenshots/list.png)
+
+### Eğitim Detay
+![Eğitim Detay](screenshots/detail.png)
+
+### Fiyat Talep Formu
+![Fiyat Talep](screenshots/form.png)
