@@ -1,25 +1,55 @@
 import React, { useState, useEffect } from "react";
-import {StyleSheet,Text,View,FlatList,TouchableOpacity,Linking,StatusBar,SafeAreaView,Alert,ActivityIndicator,} from "react-native";
-import {collection,getDocs,addDoc,serverTimestamp,} from "firebase/firestore";
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  TouchableOpacity,
+  StatusBar,
+  SafeAreaView,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
-
-const CONTACT_NUMBER = "905521707381";
 
 export default function ListScreen({ navigation }: any) {
   const [egitimler, setEgitimler] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedFilter, setSelectedFilter] = useState("Hepsi");
 
   const fetchEgitimler = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "egitimler"));
+
       const data = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setEgitimler(data);
+
+      // tekrar eden eğitimleri kaldır
+      const uniqueData = data.filter(
+        (item: any, index: number, self: any[]) =>
+          index ===
+          self.findIndex(
+            (x: any) =>
+              x.ad === item.ad &&
+              x.tarih === item.tarih &&
+              x.tip === item.tip
+          )
+      );
+
+      // tarihe göre sırala (yakın → uzak)
+      const sortedData = uniqueData.sort((a: any, b: any) => {
+        const dateA = new Date(String(a.tarih)).getTime();
+        const dateB = new Date(String(b.tarih)).getTime();
+        return dateA - dateB;
+      });
+
+      setEgitimler(sortedData);
     } catch (error) {
       console.error("Data fetch error:", error);
-      Alert.alert("Hata", "Eğitim listesi şu an yüklenemiyor.");
+      Alert.alert("Hata", "Eğitim listesi yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -29,43 +59,23 @@ export default function ListScreen({ navigation }: any) {
     fetchEgitimler();
   }, []);
 
-  const saveInteraction = async (
-    courseName: string,
-    actionType: "whatsapp" | "call"
-  ) => {
-    try {
-      await addDoc(collection(db, "talepler"), {
-        courseName,
-        actionType,
-        timestamp: serverTimestamp(),
-      });
-    } catch (e) {
-      console.log("Log error:", e);
-    }
-  };
+  const filters = ["Hepsi", "Online", "Hybrid", "Yüz Yüze"];
 
-  const handleWhatsApp = async (courseName: string) => {
-    await saveInteraction(courseName, "whatsapp");
-    const message = `${courseName} eğitimi hakkında bilgi alabilir miyim?`;
-    const url = `whatsapp://send?phone=${CONTACT_NUMBER}&text=${encodeURIComponent(
-      message
-    )}`;
+  const filteredEgitimler =
+    selectedFilter === "Hepsi"
+      ? egitimler
+      : egitimler.filter(
+          (item: any) =>
+            String(item.tip || "").toLowerCase() ===
+            selectedFilter.toLowerCase()
+        );
 
-    try {
-      const isSupported = await Linking.canOpenURL(url);
-      if (isSupported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert("Hata", "Cihazınızda WhatsApp yüklü değil.");
-      }
-    } catch (error) {
-      Alert.alert("Hata", "Bağlantı açılamadı.");
-    }
-  };
+  const getTypeBadgeStyle = (tip?: string) => {
+    const lowerTip = String(tip || "").toLowerCase();
 
-  const handleCall = async (courseName: string) => {
-    await saveInteraction(courseName, "call");
-    Linking.openURL(`tel:${CONTACT_NUMBER}`);
+    if (lowerTip === "online") return styles.badgeOnline;
+    if (lowerTip === "hybrid") return styles.badgeHybrid;
+    return styles.badgeFaceToFace;
   };
 
   if (loading) {
@@ -84,39 +94,68 @@ export default function ListScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backButton}>← Geri</Text>
         </TouchableOpacity>
+
         <Text style={styles.headerTitle}>Eğitim Takvimi</Text>
+
         <View style={{ width: 40 }} />
       </View>
 
-      <FlatList
-        data={egitimler}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 15 }}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.courseName}>{item.ad}</Text>
-            <Text style={styles.courseDetails}>
-              📅 {item.tarih} | {item.tip}
-            </Text>
+      <View style={styles.filterContainer}>
+        {filters.map((filter) => {
+          const isActive = selectedFilter === filter;
 
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.callButton}
-                onPress={() => handleCall(item.ad)}
+          return (
+            <TouchableOpacity
+              key={filter}
+              style={[
+                styles.filterButton,
+                isActive && styles.activeFilterButton,
+              ]}
+              onPress={() => setSelectedFilter(filter)}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  isActive && styles.activeFilterButtonText,
+                ]}
               >
-                <Text style={styles.buttonText}>📞 Hemen Ara</Text>
-              </TouchableOpacity>
+                {filter}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
-              <TouchableOpacity
-                style={styles.wpButton}
-                onPress={() => handleWhatsApp(item.ad)}
-              >
-                <Text style={styles.buttonText}>💬 WhatsApp</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      />
+      {filteredEgitimler.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Bu filtrede eğitim bulunamadı.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredEgitimler}
+          keyExtractor={(item) => String(item.id)}
+          contentContainerStyle={{ padding: 15 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => navigation.navigate("Detail", { egitim: item })}
+              activeOpacity={0.8}
+            >
+              <View style={styles.cardTopRow}>
+                <Text style={styles.courseName}>{item.ad}</Text>
+
+                <View style={[styles.badge, getTypeBadgeStyle(item.tip)]}>
+                  <Text style={styles.badgeText}>{item.tip}</Text>
+                </View>
+              </View>
+
+              <Text style={styles.courseDetails}>📅 {item.tarih}</Text>
+
+              <Text style={styles.detayText}>Detayı görmek için dokunun</Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -126,6 +165,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0a111f",
   },
+
   header: {
     flexDirection: "row",
     padding: 20,
@@ -133,56 +173,118 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+
   headerTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#fff",
   },
+
   backButton: {
     color: "#3498db",
     fontSize: 16,
     fontWeight: "600",
   },
+
+  filterContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 15,
+    paddingTop: 15,
+    gap: 8,
+  },
+
+  filterButton: {
+    backgroundColor: "#111c2e",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#22314d",
+  },
+
+  activeFilterButton: {
+    backgroundColor: "#3498db",
+    borderColor: "#3498db",
+  },
+
+  filterButtonText: {
+    color: "#cbd5e0",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  activeFilterButtonText: {
+    color: "#fff",
+  },
+
   card: {
     backgroundColor: "#111c2e",
-    padding: 15,
+    padding: 20,
     borderRadius: 12,
     marginBottom: 12,
   },
+
+  cardTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+
   courseName: {
+    flex: 1,
     fontSize: 16,
     fontWeight: "bold",
     color: "#fff",
-    marginBottom: 5,
   },
+
   courseDetails: {
     fontSize: 13,
     color: "#cbd5e0",
-    marginBottom: 15,
+    marginTop: 8,
   },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+
+  detayText: {
+    marginTop: 10,
+    color: "#3498db",
+    fontSize: 12,
   },
-  callButton: {
-    backgroundColor: "transparent",
-    width: "48%",
-    padding: 10,
-    borderRadius: 8,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#3498db",
+
+  badge: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
   },
-  wpButton: {
-    backgroundColor: "#25D366",
-    width: "48%",
-    padding: 10,
-    borderRadius: 8,
-    alignItems: "center",
+
+  badgeOnline: {
+    backgroundColor: "#1f8b4c",
   },
-  buttonText: {
+
+  badgeHybrid: {
+    backgroundColor: "#9b59b6",
+  },
+
+  badgeFaceToFace: {
+    backgroundColor: "#e67e22",
+  },
+
+  badgeText: {
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+
+  emptyText: {
+    color: "#cbd5e0",
+    fontSize: 15,
+    textAlign: "center",
   },
 });
